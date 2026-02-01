@@ -31,7 +31,7 @@ class TestEnvironment:
                         break
             except TimeoutError:
                 continue
-        await emulator.stop()
+        emulator.stop()
         combined = "".join(output_parts)
         assert "MYTERM=xterm-256color" in combined
 
@@ -54,6 +54,6 @@ class TestEnvironment:
                         break
             except TimeoutError:
                 continue
-        await emulator.stop()
+        emulator.stop()
         combined = "".join(output_parts)
         assert expected in combined

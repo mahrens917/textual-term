@@ -6,7 +6,6 @@ import asyncio
 
 import pyte
 from textual.events import Key, Resize
-from textual.timer import Timer
 from textual.widget import Widget
 
 from textual_term._emulator import PtyEmulator
@@ -14,7 +13,6 @@ from textual_term._keys import translate_key
 from textual_term._renderer import TerminalRenderable, render_screen
 from textual_term._screen import ResponsiveScreen
 
-REFRESH_RATE = 1 / 30
 DEFAULT_ROWS = 24
 DEFAULT_COLS = 80
 
@@ -42,8 +40,6 @@ class Terminal(Widget, can_focus=True):
         self._screen: ResponsiveScreen | None = None
         self._stream: pyte.Stream | None = None
         self._recv_task: asyncio.Task | None = None  # pyright: ignore[reportMissingTypeArgument]
-        self._refresh_timer: Timer | None = None
-        self._needs_render = False
         self._renderable = TerminalRenderable([])
 
     def start(self) -> None:
@@ -57,64 +53,56 @@ class Terminal(Widget, can_focus=True):
         self._screen = screen
         self._stream = stream
         emulator.start()
-        loop = asyncio.get_event_loop()
-        self._recv_task = loop.create_task(self._recv_loop())
-        self._refresh_timer = self.set_interval(REFRESH_RATE, self._on_refresh_tick)
+        self._recv_task = asyncio.create_task(self._recv_loop())
 
-    async def stop(self) -> None:
+    def stop(self) -> None:
         """Stop the PTY emulator and cancel background tasks."""
         if self._recv_task:
             self._recv_task.cancel()
             self._recv_task = None
-        if self._refresh_timer:
-            self._refresh_timer.stop()
-            self._refresh_timer = None
         if self._emulator:
-            await self._emulator.stop()
+            self._emulator.stop()
             self._emulator = None
 
     def render(self) -> TerminalRenderable:
         """Return the current terminal renderable."""
         return self._renderable
 
-    def _on_refresh_tick(self) -> None:
-        if self._needs_render and self._screen:
-            self._needs_render = False
-            self._renderable = TerminalRenderable(render_screen(self._screen, self.has_focus))
-            self.refresh()
-
     async def _recv_loop(self) -> None:
-        """Drain emulator output_queue and feed to pyte Stream."""
+        """Drain emulator output_queue, feed to pyte, and refresh display."""
         emulator = self._emulator
         stream = self._stream
-        if emulator is None or stream is None:
+        screen = self._screen
+        if emulator is None or stream is None or screen is None:
             return
         while True:
             msg = await emulator.output_queue.get()
             if msg[0] == "stdout":
                 stream.feed(msg[1])
-                self._needs_render = True
+                self._renderable = TerminalRenderable(render_screen(screen, self.has_focus))
+                self.refresh()
+            elif msg[0] == "disconnect":
+                break
 
     async def on_key(self, event: Key) -> None:
         """Translate key event and write to PTY."""
-        event.prevent_default()
         event.stop()
         translated = translate_key(event)
         if translated is not None and self._emulator:
             await self._emulator.input_queue.put(["stdin", translated])
 
-    def on_resize(self, event: Resize) -> None:
+    async def on_resize(self, event: Resize) -> None:
         """Update screen size and notify PTY of resize."""
         rows, cols = self._terminal_size()
         if self._screen and (self._screen.lines != rows or self._screen.columns != cols):
             self._screen.resize(rows, cols)
             if self._emulator:
-                self._emulator.resize(rows, cols)
+                await self._emulator.input_queue.put(["resize", rows, cols])
 
     def _terminal_size(self) -> tuple[int, int]:
         """Return (rows, cols) from widget content size, defaulting to 80x24."""
-        height = self.content_size.height
-        width = self.content_size.width
+        height = self.size.height
+        width = self.size.width
         rows = height if height > 1 else DEFAULT_ROWS
         cols = width if width > 1 else DEFAULT_COLS
         return rows, cols

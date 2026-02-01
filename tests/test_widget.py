@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from textual_term._widget import REFRESH_RATE, Terminal
+from textual_term._widget import Terminal
 
 
 class TestTerminalWidget:
@@ -19,7 +19,3 @@ class TestTerminalWidget:
         assert terminal._emulator is None
         assert terminal._screen is None
         assert terminal._stream is None
-
-    def test_refresh_rate(self) -> None:
-        """Refresh rate should be approximately 30fps."""
-        assert abs(REFRESH_RATE - 1 / 30) < 0.001

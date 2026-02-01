@@ -32,9 +32,44 @@ class TestPtyEmulator:
                         break
             except TimeoutError:
                 continue
-        await emulator.stop()
+        emulator.stop()
         combined = "".join(output_parts)
         assert "PTY_TEST_OUTPUT" in combined
+
+    @pytest.mark.integration
+    async def test_input_queue_stdin(self) -> None:
+        """Putting stdin on input_queue should produce output via _run task."""
+        shell = os.environ.get("SHELL", "/bin/sh")
+        emulator = PtyEmulator(shell, 24, 80)
+        emulator.open_pty()
+        emulator.start()
+        await emulator.input_queue.put(["stdin", "echo QUEUE_TEST\n"])
+        output_parts: list[str] = []
+        for _ in range(50):
+            try:
+                msg = await asyncio.wait_for(emulator.output_queue.get(), timeout=0.1)
+                if msg[0] == "stdout":
+                    output_parts.append(msg[1])
+                    if "QUEUE_TEST" in "".join(output_parts):
+                        break
+            except TimeoutError:
+                continue
+        emulator.stop()
+        combined = "".join(output_parts)
+        assert "QUEUE_TEST" in combined
+
+    @pytest.mark.integration
+    async def test_input_queue_resize(self) -> None:
+        """Putting resize on input_queue should not raise."""
+        shell = os.environ.get("SHELL", "/bin/sh")
+        emulator = PtyEmulator(shell, 24, 80)
+        emulator.open_pty()
+        emulator.start()
+        await emulator.input_queue.put(["resize", 40, 120])
+        await asyncio.sleep(0.1)
+        assert emulator._rows == 40
+        assert emulator._cols == 120
+        emulator.stop()
 
     @pytest.mark.integration
     async def test_stop_cleans_up(self) -> None:
@@ -44,7 +79,7 @@ class TestPtyEmulator:
         emulator.open_pty()
         emulator.start()
         await asyncio.sleep(0.1)
-        await emulator.stop()
+        emulator.stop()
         assert emulator._fd is None
         assert emulator._pid is None
 
