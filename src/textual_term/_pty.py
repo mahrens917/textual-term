@@ -24,17 +24,10 @@ def open_pty(command: str, rows: int, cols: int) -> tuple[int, int]:
     return child_pid, master_fd
 
 
-_STDIO_FD_COUNT = 3
-
-
 def _exec_child(master_fd: int, slave_fd: int, command: str, env: dict[str, str]) -> None:
-    """Child process: set up stdio and exec the shell (never returns)."""
+    """Child process: set up controlling terminal and exec the shell (never returns)."""
     os.close(master_fd)
-    os.setsid()
-    for i in range(_STDIO_FD_COUNT):
-        os.dup2(slave_fd, i)
-    if slave_fd >= _STDIO_FD_COUNT:
-        os.close(slave_fd)
+    os.login_tty(slave_fd)
     os.execvpe(command, [command], env)
 
 
