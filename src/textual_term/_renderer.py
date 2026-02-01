@@ -9,9 +9,8 @@ from rich.style import Style
 from rich.text import Text
 
 if TYPE_CHECKING:
+    from pyte.screens import Char, Screen
     from rich.console import Console
-
-    import pyte
 
 COLOR_MAP: dict[str, str] = {
     "brown": "yellow",
@@ -33,16 +32,13 @@ def _resolve_color(color: str) -> str | None:
     lower = color.lower()
     if lower in COLOR_MAP:
         return COLOR_MAP[lower]
-    if len(color) == 6:
-        try:
-            int(color, 16)
-            return f"#{color}"
-        except ValueError:
-            pass
+    hex_color_length = 6
+    if len(color) == hex_color_length and all(c in "0123456789abcdefABCDEF" for c in color):
+        return f"#{color}"
     return lower
 
 
-def _char_to_style(char: pyte.screen.Char) -> Style:
+def _char_to_style(char: Char) -> Style:
     """Convert a pyte Char to a Rich Style."""
     fg = _resolve_color(char.fg) if char.fg != "default" else None
     bg = _resolve_color(char.bg) if char.bg != "default" else None
@@ -58,7 +54,7 @@ def _char_to_style(char: pyte.screen.Char) -> Style:
 
 
 def _render_line(
-    line: dict[int, pyte.screen.Char],
+    line: dict[int, Char],
     columns: int,
     cursor_x: int | None,
 ) -> Text:
@@ -79,7 +75,7 @@ def _render_line(
     return text
 
 
-def render_screen(screen: pyte.Screen, show_cursor: bool) -> list[Text]:
+def render_screen(screen: Screen, show_cursor: bool) -> list[Text]:
     """Convert a pyte Screen buffer to a list of Rich Text lines."""
     lines: list[Text] = []
     cursor_y = screen.cursor.y if show_cursor else -1
@@ -96,5 +92,4 @@ class TerminalRenderable:
         self._lines = text_lines
 
     def __rich_console__(self, console: Console, options: ConsoleOptions) -> RenderResult:
-        for line in self._lines:
-            yield line
+        yield from self._lines

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pyte
-from rich.style import Style
+from pyte.screens import Char
 from rich.text import Text
 
 from textual_term._renderer import (
@@ -47,20 +47,20 @@ class TestCharToStyle:
 
     def test_default_char(self) -> None:
         """Default char should produce empty style."""
-        char = pyte.screen.Char(" ")
+        char = Char(" ")
         style = _char_to_style(char)
         assert style.color is None
         assert style.bgcolor is None
 
     def test_bold_char(self) -> None:
         """Bold char should produce bold style."""
-        char = pyte.screen.Char("X", bold=True)
+        char = Char("X", bold=True)
         style = _char_to_style(char)
         assert style.bold is True
 
     def test_colored_char(self) -> None:
         """Char with fg color should produce colored style."""
-        char = pyte.screen.Char("X", fg="red")
+        char = Char("X", fg="red")
         style = _char_to_style(char)
         assert style.color is not None
 

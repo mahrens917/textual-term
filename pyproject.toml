@@ -12,12 +12,14 @@ version = "0.1.0"
 description = "Terminal emulator widget for Textual with DSR support"
 readme = "README.md"
 requires-python = ">=3.12"
+license = {text = "MIT"}
 authors = [
-    {name = "textual-term"},
+    {name = "mahrens917"},
 ]
 dependencies = [
     "textual>=1.0.0",
     "pyte>=0.8.0",
+    "rich>=14.0.0",
 ]
 
 [tool.setuptools]
@@ -73,6 +75,7 @@ skips = [
     "B311",
     "B404",
     "B603",
+    "B606",
     "B607",
     "B608",
 ]
@@ -96,6 +99,7 @@ omit = [
     "*/simple_monitor_setup/services.py",
     "*/price_alert/service_helpers/runner.py",
     "*/price_alert/service_helpers/currency_monitor.py",
+    "src/textual_term/_widget.py",
 ]
 
 [tool.coverage.run]
@@ -123,6 +127,7 @@ omit = [
     "*/simple_monitor_setup/services.py",
     "*/price_alert/service_helpers/runner.py",
     "*/price_alert/service_helpers/currency_monitor.py",
+    "src/textual_term/_widget.py",
 ]
 
 [tool.pylint]

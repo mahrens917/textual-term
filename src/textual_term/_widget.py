@@ -87,14 +87,11 @@ class Terminal(Widget, can_focus=True):
         stream = self._stream
         if emulator is None or stream is None:
             return
-        try:
-            while True:
-                msg = await emulator.output_queue.get()
-                if msg[0] == "stdout":
-                    stream.feed(msg[1])
-                    self._needs_render = True
-        except asyncio.CancelledError:
-            pass
+        while True:
+            msg = await emulator.output_queue.get()
+            if msg[0] == "stdout":
+                stream.feed(msg[1])
+                self._needs_render = True
 
     async def on_key(self, event: Key) -> None:
         """Translate key event and write to PTY."""

@@ -8,6 +8,7 @@ import os
 import pytest
 
 from textual_term._emulator import PtyEmulator
+from textual_term._pty import close_pty, open_pty, resize_fd
 
 
 class TestPtyEmulator:
@@ -16,7 +17,8 @@ class TestPtyEmulator:
     @pytest.mark.integration
     async def test_echo(self) -> None:
         """Writing to PTY should produce output on output_queue."""
-        emulator = PtyEmulator(os.environ.get("SHELL", "/bin/sh"), 24, 80)
+        shell = os.environ.get("SHELL", "/bin/sh")
+        emulator = PtyEmulator(shell, 24, 80)
         emulator.open_pty()
         emulator.start()
         emulator.write_to_pty("echo PTY_TEST_OUTPUT\n")
@@ -28,7 +30,7 @@ class TestPtyEmulator:
                     output_parts.append(msg[1])
                     if "PTY_TEST_OUTPUT" in "".join(output_parts):
                         break
-            except asyncio.TimeoutError:
+            except TimeoutError:
                 continue
         await emulator.stop()
         combined = "".join(output_parts)
@@ -37,7 +39,8 @@ class TestPtyEmulator:
     @pytest.mark.integration
     async def test_stop_cleans_up(self) -> None:
         """After stop(), fd and pid should be None."""
-        emulator = PtyEmulator(os.environ.get("SHELL", "/bin/sh"), 24, 80)
+        shell = os.environ.get("SHELL", "/bin/sh")
+        emulator = PtyEmulator(shell, 24, 80)
         emulator.open_pty()
         emulator.start()
         await asyncio.sleep(0.1)
@@ -45,15 +48,19 @@ class TestPtyEmulator:
         assert emulator._fd is None
         assert emulator._pid is None
 
+
+class TestPtyFunctions:
+    """Test low-level PTY functions."""
+
+    def test_open_and_close(self) -> None:
+        """open_pty should return valid pid and fd, close_pty should clean up."""
+        pid, fd = open_pty("/bin/sh", 24, 80)
+        assert pid > 0
+        assert fd >= 0
+        close_pty(fd, pid)
+
     def test_resize(self) -> None:
-        """Resize should update internal rows/cols."""
-        emulator = PtyEmulator("/bin/sh", 24, 80)
-        emulator.open_pty()
-        emulator.resize(40, 120)
-        assert emulator._rows == 40
-        assert emulator._cols == 120
-        os.close(emulator._fd)
-        try:
-            os.waitpid(emulator._pid, os.WNOHANG)
-        except ChildProcessError:
-            pass
+        """resize_fd should not raise for valid dimensions."""
+        pid, fd = open_pty("/bin/sh", 24, 80)
+        resize_fd(fd, 40, 120)
+        close_pty(fd, pid)
