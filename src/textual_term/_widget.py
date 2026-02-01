@@ -15,6 +15,8 @@ from textual_term._renderer import TerminalRenderable, render_screen
 from textual_term._screen import ResponsiveScreen
 
 REFRESH_RATE = 1 / 30
+DEFAULT_ROWS = 24
+DEFAULT_COLS = 80
 
 
 class Terminal(Widget, can_focus=True):
@@ -110,7 +112,9 @@ class Terminal(Widget, can_focus=True):
                 self._emulator.resize(rows, cols)
 
     def _terminal_size(self) -> tuple[int, int]:
-        """Return (rows, cols) from widget content size."""
-        rows = max(self.content_size.height, 2)
-        cols = max(self.content_size.width, 2)
+        """Return (rows, cols) from widget content size, defaulting to 80x24."""
+        height = self.content_size.height
+        width = self.content_size.width
+        rows = height if height > 1 else DEFAULT_ROWS
+        cols = width if width > 1 else DEFAULT_COLS
         return rows, cols

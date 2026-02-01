@@ -13,22 +13,13 @@ import termios
 
 def open_pty(command: str, rows: int, cols: int) -> tuple[int, int]:
     """Fork a PTY and exec the command in the child. Returns (child_pid, master_fd)."""
-    master_fd, slave_fd = pty.openpty()
-    resize_fd(master_fd, rows, cols)
-    env = os.environ.copy()
-    env["TERM"] = "xterm-256color"
-    child_pid = os.fork()
+    child_pid, master_fd = pty.fork()
     if child_pid == 0:
-        _exec_child(master_fd, slave_fd, command, env)
-    os.close(slave_fd)
+        env = os.environ.copy()
+        env["TERM"] = "xterm-256color"
+        os.execvpe(command, [command], env)
+    resize_fd(master_fd, rows, cols)
     return child_pid, master_fd
-
-
-def _exec_child(master_fd: int, slave_fd: int, command: str, env: dict[str, str]) -> None:
-    """Child process: set up controlling terminal and exec the shell (never returns)."""
-    os.close(master_fd)
-    os.login_tty(slave_fd)
-    os.execvpe(command, [command], env)
 
 
 def resize_fd(fd: int, rows: int, cols: int) -> None:
