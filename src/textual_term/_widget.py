@@ -86,9 +86,11 @@ class Terminal(Widget, can_focus=True):
 
     async def on_key(self, event: Key) -> None:
         """Translate key event and write to PTY."""
+        if self._emulator is None:
+            return
         event.stop()
         translated = translate_key(event)
-        if translated is not None and self._emulator:
+        if translated is not None:
             await self._emulator.input_queue.put(["stdin", translated])
 
     async def on_resize(self, event: Resize) -> None:
