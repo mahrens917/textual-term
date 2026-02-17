@@ -12,14 +12,19 @@ import termios
 
 
 def open_pty(command: str, rows: int, cols: int) -> tuple[int, int]:
-    """Fork a PTY and exec the command in the child. Returns (child_pid, master_fd)."""
-    child_pid, master_fd = pty.fork()
-    if child_pid == 0:
-        env = os.environ.copy()
-        env["TERM"] = "xterm-256color"
-        os.execvpe(command, [command], env)
+    """Open a PTY and spawn the command as a child process. Returns (child_pid, master_fd)."""
+    master_fd, slave_fd = pty.openpty()
+    env = os.environ.copy()
+    env["TERM"] = "xterm-256color"
+    file_actions = [
+        (os.POSIX_SPAWN_DUP2, slave_fd, 0),
+        (os.POSIX_SPAWN_DUP2, slave_fd, 1),
+        (os.POSIX_SPAWN_DUP2, slave_fd, 2),
+    ]
+    pid = os.posix_spawnp(command, [command], env, file_actions=file_actions, setsid=True)
+    os.close(slave_fd)
     resize_fd(master_fd, rows, cols)
-    return child_pid, master_fd
+    return pid, master_fd
 
 
 def resize_fd(fd: int, rows: int, cols: int) -> None:
