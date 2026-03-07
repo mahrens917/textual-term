@@ -12,6 +12,8 @@ if TYPE_CHECKING:
     from pyte.screens import Char, Screen
     from rich.console import Console
 
+HEX_COLOR_LENGTH = 6
+
 COLOR_MAP: dict[str, str] = {
     "brown": "yellow",
     "brightblack": "#808080",
@@ -32,8 +34,7 @@ def _resolve_color(color: str) -> str | None:
     lower = color.lower()
     if lower in COLOR_MAP:
         return COLOR_MAP[lower]
-    hex_color_length = 6
-    if len(color) == hex_color_length and all(c in "0123456789abcdefABCDEF" for c in color):
+    if len(color) == HEX_COLOR_LENGTH and all(c in "0123456789abcdefABCDEF" for c in color):
         return f"#{color}"
     return lower
 
