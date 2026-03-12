@@ -2,6 +2,12 @@
 
 Terminal emulator widget for Textual with DSR support. Code in `src/textual_term/`, tests in `tests/`, CI config in `ci_shared.mk` + `shared-tool-config.toml`.
 
+## Path Portability
+- All repos live as siblings under `~/projects/` (e.g., `~/projects/monitor`, `~/projects/common`).
+- NEVER hardcode absolute paths like `/Users/<username>/projects/...` in code or config.
+- Use `~/projects/<repo>` in config files; code must call `Path.expanduser()` when resolving these paths.
+- Cross-repo `file://` URIs in `pyproject.toml` are for local dev only; EC2 installs via `~/projects/monitor/scripts/deploy/install_local_packages.sh`.
+
 ## Quick Commands
 - `make check` — runs full CI pipeline (format, lint, type-check, test).
 
