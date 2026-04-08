@@ -241,7 +241,7 @@ typeCheckingMode = "basic"
 [tool.pytest.ini_options]
 addopts = [
     "-q",
-    "--tb=no",
+    "--tb=short",
     "--strict-markers",
     "--strict-config",
     "--durations=10",
