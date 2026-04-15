@@ -92,11 +92,11 @@ shared-checks:
 	@echo "Running shared CI checks..."
 	@FAILED_CHECKS=0; \
 	\
-	echo "→ Running isort..."; \
-	isort --profile black $(FORMAT_TARGETS) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
+	echo "→ Running isort (check-only)..."; \
+	isort --check-only --profile black $(FORMAT_TARGETS) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
 	\
-	echo "→ Running black..."; \
-	black --line-length $(BLACK_LINE_LENGTH) $(FORMAT_TARGETS) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
+	echo "→ Running black (check-only)..."; \
+	black --check --line-length $(BLACK_LINE_LENGTH) $(FORMAT_TARGETS) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
 	\
 	echo "→ Running codespell..."; \
 	if [ -n "$(SHARED_CODESPELL_IGNORE)" ] && [ -f "$(SHARED_CODESPELL_IGNORE)" ]; then \
@@ -156,7 +156,7 @@ shared-checks:
 		for CVE in $(PIP_AUDIT_IGNORE_VULNS); do \
 			PIP_AUDIT_IGNORE_FLAGS="$$PIP_AUDIT_IGNORE_FLAGS --ignore-vuln $$CVE"; \
 		done; \
-		$(PYTHON) -m pip_audit --fix $$PIP_AUDIT_IGNORE_FLAGS || echo "⚠️  pip-audit failed"; \
+		$(PYTHON) -m pip_audit $$PIP_AUDIT_IGNORE_FLAGS || echo "⚠️  pip-audit failed"; \
 	fi; \
 	\
 	echo "→ Running policy_guard..."; \
@@ -198,8 +198,8 @@ shared-checks:
 	echo "→ Running documentation_guard..."; \
 	$(PYTHON) -m ci_tools.scripts.documentation_guard --root $(SHARED_DOC_ROOT) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
 	\
-	echo "→ Running ruff..."; \
-	ruff check --target-version=py310 --fix $(FORMAT_TARGETS) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
+	echo "→ Running ruff (check-only)..."; \
+	ruff check --target-version=py310 $(FORMAT_TARGETS) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
 	\
 	echo "→ Running pyright..."; \
 	pyright --warnings $(SHARED_PYRIGHT_TARGETS) || FAILED_CHECKS=$$((FAILED_CHECKS + 1)); \
